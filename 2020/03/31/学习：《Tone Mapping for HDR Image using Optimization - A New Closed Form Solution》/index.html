@@ -39,7 +39,7 @@
 <meta property="og:image" content="https://raw.githubusercontent.com/lgsen1996/PicData/master/C28_tm1.png">
 <meta property="og:image" content="https://raw.githubusercontent.com/lgsen1996/PicData/master/C28_tm2.png">
 <meta property="article:published_time" content="2020-03-31T10:00:27.000Z">
-<meta property="article:modified_time" content="2020-03-31T16:04:47.127Z">
+<meta property="article:modified_time" content="2020-03-31T16:07:32.942Z">
 <meta property="article:author" content="lgsen">
 <meta property="article:tag" content="学习">
 <meta property="article:tag" content="HDR">
@@ -240,7 +240,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-04-01 00:04:47" itemprop="dateModified" datetime="2020-04-01T00:04:47+08:00">2020-04-01</time>
+                <time title="Modified: 2020-04-01 00:07:32" itemprop="dateModified" datetime="2020-04-01T00:07:32+08:00">2020-04-01</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -264,21 +264,22 @@
 
       
         <p>《<a href="https://ieeexplore.ieee.org/abstract/document/1699057" target="_blank" rel="noopener">Tone Mapping for HDR Image using Optimization - A New Closed Form Solution</a>》一文来自2006年的ICPR，介绍了一种全局的HDR Tone Mapping的方法。该方法把Tone Mapping看作是一个量化的问题，在线性量化（或称线性映射，文中为linear mapping）和直方图均衡化量化（或称直方图均衡化映射，文中为histogram equalization mapping）之间取一个均衡点，因此，在增强细节以及保持图像整体自然二者间也达到一个平衡。</p>
-<p><img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/image-20200330114730378.png" alt="" style="zoom: 60%;" /></p>
-<p>如图。根据文中的说法，(a)是线性量化的结果，在量化的时候等间距地划分每个区间的长度，而没有考虑直方图的分布特征，以致于在某些聚集大量像素的区间，压缩效果过大，太多像素被压缩至相同的数值导致丢失细节；与此相反的是某些仅有零碎像素的区间则会无法充分利用动态范围。而考虑分布特征，增强细节的最传统的手段就是直方图均衡化，即(b)。在(b)中，理想情况下，每个区间内所包含的像素的数量是相同的，最大限度地利用了动态范围。但是，这种做法则完全罔顾了原来的真实的像素亮度值，可能会造成图像细节的过大增强，使图像整体效果显得不自然。因此，一个好的解决方案是在(a)和(b)中取得平衡，即(c)，每个区间范围的取值应该位于(a)和(b)之间，如<span class="math inline">\(le_1\)</span>的取值应该位于<span class="math inline">\(l_1\)</span>和<span class="math inline">\(e_1\)</span>之间。</p>
+<img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/image-20200330114730378.png" alt="" style="zoom: 60%;" />
+<p>如图。根据文中的说法，(a)是线性量化的结果，在量化的时候等间距地划分每个区间的长度，而没有考虑直方图的分布特征，以致于在某些聚集大量像素的区间，压缩效果过大，太多像素被压缩至相同的数值导致丢失细节；与此相反的是某些仅有零碎像素的区间则会无法充分利用动态范围。而考虑分布特征，增强细节的最传统的手段就是直方图均衡化，即(b)。在(b)中，理想情况下，每个区间内所包含的像素的数量是相同的，最大限度地利用了动态范围。但是，这种做法则完全罔顾了原来的真实的像素亮度值，可能会造成图像细节的过大增强，使图像整体效果显得不自然。因此，一个好的解决方案是在(a)和(b)中取得平衡，即(c)，每个区间范围的取值应该位于(a)和(b)之间，如$le_1$的取值应该位于$l_1$和$e_1$之间。</p>
 <p>以上是这篇文章的核心思想，下面讲讲具体做法。</p>
 <blockquote>
 <p>软件工具：MATLAB</p>
 </blockquote>
 <p>整个做法的过程具有两个部分：第一步是进行一个初步的映射，把HDR图像初步映射成亮度显示正常的SDR图像；第二步才是利用上述的原理，对初步得到的SDR图像进行进一步的增强。</p>
-<hr />
-<p>首先第一步，映射的方法也非常的简单，主要是采取了<span class="math inline">\(log()\)</span>函数，达到压缩高光，拓展低光的效果。采用的公式如下： <span class="math display">\[
-D(I)=(D_{max}-D_{min})*\frac{log(I+\tau)-log(I_{min}+\tau)}{log(I_{max}+\tau)-log(I_{min}+\tau)}+D_{min}
-\]</span></p>
-<p>其中，<span class="math inline">\(I\)</span>是HDR图像的亮度图像（即亮度通道），<span class="math inline">\(D(I)\)</span>自然指的就是初步映射后得到的SDR图像，<span class="math inline">\(D_{max}\)</span>和<span class="math inline">\(D_{min}\)</span>分别是<span class="math inline">\(D(I)\)</span>的最大值和最小值，这里意味着<span class="math inline">\(D(I)\)</span>的数值范围是可控的，但在工程中一般采取<span class="math inline">\([0,1]\)</span>即可。此外，<span class="math inline">\(\tau\)</span>是可调参数，文中取<span class="math inline">\(\tau=\alpha(I_{max}-I_{min}), \alpha\geq0\)</span>。调整<span class="math inline">\(\alpha\)</span>，就是调整<span class="math inline">\(\tau\)</span>，实际上是在调整初步映射全局函数对多少比例的低光进行扩展以及对多少比例的高光进行压缩，通俗讲就是在调整映射后SDR图像的整体亮度。文中取不同的<span class="math inline">\(\alpha\)</span>值画出了不同的曲线，可以直观地感受到<span class="math inline">\(\alpha\)</span>值的影响。可惜的是，文中没有给出实际操作中<span class="math inline">\(\alpha\)</span>的建议值。</p>
-<p><img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/image-20200330172533724.png" alt="image-20200330172533724" style="zoom:70%;" /></p>
+<hr>
+<p>首先第一步，映射的方法也非常的简单，主要是采取了$log()$函数，达到压缩高光，拓展低光的效果。采用的公式如下：<br>
+$$<br>
+D(I)=(D_{max}-D_{min})*\frac{log(I+\tau)-log(I_{min}+\tau)}{log(I_{max}+\tau)-log(I_{min}+\tau)}+D_{min}<br>
+$$</p>
+<p>其中，$I$是HDR图像的亮度图像（即亮度通道），$D(I)$自然指的就是初步映射后得到的SDR图像，$D_{max}$和$D_{min}$分别是$D(I)$的最大值和最小值，这里意味着$D(I)$的数值范围是可控的，但在工程中一般采取$[0,1]$即可。此外，$\tau$是可调参数，文中取$\tau=\alpha(I_{max}-I_{min}), \alpha\geq0$。调整$\alpha$，就是调整$\tau$，实际上是在调整初步映射全局函数对多少比例的低光进行扩展以及对多少比例的高光进行压缩，通俗讲就是在调整映射后SDR图像的整体亮度。文中取不同的$\alpha$值画出了不同的曲线，可以直观地感受到$\alpha$值的影响。可惜的是，文中没有给出实际操作中$\alpha$的建议值。</p>
+<img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/image-20200330172533724.png" alt="image-20200330172533724" style="zoom:70%;" />
 <blockquote>
-<p>这里想额外说一句，这一组曲线应该是在同一张图像，也就是固定<span class="math inline">\(I_{max}\)</span>和<span class="math inline">\(I_{min}\)</span>的条件下，所绘制的。因为根据上述的公式，映射函数相当于是在<span class="math inline">\(log()\)</span>函数上，根据<span class="math inline">\(I_{max}\)</span>和<span class="math inline">\(I_{min}\)</span>在<span class="math inline">\(log()\)</span>函数上截取了一段，然后在横轴以及纵轴上进行归一化。当<span class="math inline">\(I_{max}\)</span>和<span class="math inline">\(I_{min}\)</span>不同，即使采用相同的<span class="math inline">\(\alpha\)</span>，所得到的映射函数也是不同的。因为在<span class="math inline">\(log()\)</span>函数上截取的区间就是<span class="math inline">\([I_{min}+\tau,I_{max}+\tau]\)</span>，当<span class="math inline">\(I_{max}\)</span>和<span class="math inline">\(I_{min}\)</span>不同，区间自然也就不同，映射函数也就不同。上面图像更大的意义是展现<span class="math inline">\(\alpha\)</span>值变化所带来的影响。</p>
+<p>这里想额外说一句，这一组曲线应该是在同一张图像，也就是固定$I_{max}$和$I_{min}$的条件下，所绘制的。因为根据上述的公式，映射函数相当于是在$log()$函数上，根据$I_{max}$和$I_{min}$在$log()$函数上截取了一段，然后在横轴以及纵轴上进行归一化。当$I_{max}$和$I_{min}$不同，即使采用相同的$\alpha$，所得到的映射函数也是不同的。因为在$log()$函数上截取的区间就是$[I_{min}+\tau,I_{max}+\tau]$，当$I_{max}$和$I_{min}$不同，区间自然也就不同，映射函数也就不同。上面图像更大的意义是展现$\alpha$值变化所带来的影响。</p>
 </blockquote>
 <p>下面是在MATLAB上实现的代码。</p>
 <p>首先，是对HDR图像的读取。前2行是文件的读取，这里我读取的是mat文件，因为感觉原格式文件有时不太方便，所以都转成了mat格式文件。第3、4行分别求了个最小值和最大值。第5行是把HDR图像变为最小值为0，这一步是源于我的经验，偶尔会有HDR文件的最小值小于0，后续很可能就会导致一系列的bug，因此习惯性加上这一句，直接排除风险。</p>
@@ -286,59 +287,64 @@ D(I)=(D_{max}-D_{min})*\frac{log(I+\tau)-log(I_{min}+\tau)}{log(I_{max}+\tau)-lo
 <p>一般的HDR文件的格式为hdr格式和exr格式，在MATLAB中会采用hdrread()函数或hdrimread()函数进行读取。hdrread()函数是MATLAB自带的，可读取hdr格式文件；hdrimread()函数需要安装<a href="https://github.com/banterle/HDR_Toolbox" target="_blank" rel="noopener">HDR_Toolbox</a>才能使用，可读取hdr格式文件和exr格式文件。</p>
 </blockquote>
 <figure class="highlight matlab"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">hdr_path = <span class="string">'xxx/xxx.mat'</span>;</span><br><span class="line">hdr = getfield(load(hdr_path), <span class="string">'hdr'</span>);</span><br><span class="line">hdr_min = <span class="built_in">min</span>(<span class="built_in">min</span>(<span class="built_in">min</span>(hdr)));</span><br><span class="line">hdr_max = <span class="built_in">max</span>(<span class="built_in">max</span>(<span class="built_in">max</span>(hdr)));</span><br><span class="line">hdr = hdr-hdr_min;</span><br></pre></td></tr></table></figure>
-<p>然后提取亮度通道，并获取最大值和最小值，也就是<span class="math inline">\(I_{max}\)</span>和<span class="math inline">\(I_{min}\)</span>。提取亮度通道时加</p>
+<p>然后提取亮度通道，并获取最大值和最小值，也就是$I_{max}$和$I_{min}$。提取亮度通道时加</p>
 <figure class="highlight matlab"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hdr_y = <span class="number">0.299</span>*hdr(:,:,<span class="number">1</span>)+<span class="number">0.587</span>*hdr(:,:,<span class="number">2</span>)+<span class="number">0.114</span>*hdr(:,:,<span class="number">3</span>)+<span class="number">1e-8</span>;</span><br><span class="line">hdr_y_min = <span class="built_in">min</span>(<span class="built_in">min</span>(hdr_y));</span><br><span class="line">hdr_y_max = <span class="built_in">max</span>(<span class="built_in">max</span>(hdr_y));</span><br></pre></td></tr></table></figure>
-<p>接着就是设置<span class="math inline">\(\alpha\)</span>和<span class="math inline">\(\tau\)</span>，进行全局初步映射。文中没有给出<span class="math inline">\(\alpha\)</span>的建议值，这里根据个人经验取<span class="math inline">\(\alpha=0.001\)</span>。由于后续的增强涉及直方图的调整，我们把它的直方图展示出来，同时也把初步映射的结果也展示出来（本质上就是经全局函数映射后线性量化的结果）。</p>
+<p>接着就是设置$\alpha$和$\tau$，进行全局初步映射。文中没有给出$\alpha$的建议值，这里根据个人经验取$\alpha=0.001$。由于后续的增强涉及直方图的调整，我们把它的直方图展示出来，同时也把初步映射的结果也展示出来（本质上就是经全局函数映射后线性量化的结果）。</p>
 <figure class="highlight matlab"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">alpha = <span class="number">0.001</span>;</span><br><span class="line">tau = alpha*(hdr_y_max-hdr_y_min);</span><br><span class="line">sdr_tm1 = (<span class="built_in">log</span>(hdr_y+tau)-<span class="built_in">log</span>(hdr_y_min+tau))/(<span class="built_in">log</span>(hdr_y_max+tau)-<span class="built_in">log</span>(hdr_y_min+tau));</span><br><span class="line"><span class="built_in">figure</span>(<span class="number">1</span>);</span><br><span class="line">imhist(sdr_tm1);</span><br><span class="line"><span class="built_in">figure</span>(<span class="number">2</span>);</span><br><span class="line">imshow(uint8(<span class="built_in">round</span>(sdr_tm1*<span class="number">255</span>)));</span><br></pre></td></tr></table></figure>
 <p>结果如下。我用的这张图是<a href="https://www.epfl.ch/labs/mmspg/downloads/hdr-eye/" target="_blank" rel="noopener">HDREye</a>中的C28这张图。</p>
-<p><img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/C28_tm1_hist.png" alt="C28_tm1_hist" style="zoom: 67%;" /></p>
-<figure>
-<img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/C28_tm1.png" alt="" /><figcaption>C28_tm2</figcaption>
-</figure>
-<hr />
-<p>然后，第二步，利用了上述说的核心思路，对初步得到的SDR图像进行增强。为了在线性量化和直方图均衡化量化二者之间取到一个平衡点，文中设定了一个需要优化的目标函数（或称损失函数）： <span class="math display">\[
-E=\sum_{k=1}^{N-1}(le_k-\frac{k(D_{max}-D_{min})^{2}}{N})^{2}+\lambda\sum_{k=1}^{N-1}(\int_{0}^{le_k}h(x)dx-\frac{k}{N}\int_{D_{min}}^{D_{max}}h(x)dx)^{2},
-\]</span></p>
-<p>其中，<span class="math inline">\(\lambda&gt;0\)</span>是一个调整权重的参数。当<span class="math inline">\(\lambda=\infty\)</span>，优化<span class="math inline">\(E\)</span>会得到直方图均衡化量化的结果；当<span class="math inline">\(\lambda=0\)</span>，优化<span class="math inline">\(E\)</span>会得到线性量化的结果。此外，<span class="math inline">\(N\)</span>是区间的数目，<span class="math inline">\(h(x)\)</span>是指增强前的图像的直方图。优化<span class="math inline">\(E\)</span>，即使最后<span class="math inline">\(E\)</span>的值达到最小，应该有：</p>
-<p><span class="math display">\[
-\frac{\partial E}{\partial le_k}=0, k=1,2,...,N-1
-\]</span> 实际上，上式带有很强的限制，想通过上式达到优化<span class="math inline">\(E\)</span>的效果是很难的。文中提供了一种巧妙的解法，并不直接求解各个区间范围的取值<span class="math inline">\(le_k\)</span>，而是先求解各个区间中像素的数目<span class="math inline">\(S_{le}(k)\)</span>，求得<span class="math inline">\(S_{le}(k)\)</span>后<span class="math inline">\(le_k\)</span>也能轻松获得。于是，<span class="math inline">\(E\)</span>的形式可以写成： <span class="math display">\[
-E=\sum^N_{k=1}(S_{le}(k)-S_l(k))^2+\lambda\sum^N_{k=1}(S_{le}(k)-\frac{T}{N})^2
-\]</span> 其中，<span class="math inline">\(S_l(k)\)</span>是线性量化操作各个区间的像素的数目，是已知的；<span class="math inline">\(N\)</span>同样是区间的数目，是给定的；<span class="math inline">\(\lambda\)</span>也是给定的；<span class="math inline">\(T\)</span>是总的像素的数目，同样是已知的。根据上式，可以得到： <span class="math display">\[
-\frac{\partial E}{\partial S_{le}(k)}=(S_{le}(k)-S_l(k))+\lambda(S_{le}(k)-\frac{T}{N})=0
-\]</span> 可以解得： <span class="math display">\[
-S_{le}(k)=\frac{NS_l(k)+\lambda T}{N(1+\lambda)}=\frac{S_l(k)+\lambda T/N}{1+\lambda}, k=1,2,...,N
-\]</span> 根据这个解，不难发现： <span class="math display">\[
-\lambda\rightarrow0:S_{le}(k)\rightarrow\frac{NS_l(k)}{N}=S_l(k)\rightarrow linear\ mapping
-\]</span></p>
-<p><span class="math display">\[
-\lambda\rightarrow\infty:S_{le}(k)\rightarrow\frac{\lambda T}{N\lambda}=\frac{T}{N}\rightarrow histogram\ equalization\ mapping
-\]</span></p>
+<img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/C28_tm1_hist.png" alt="C28_tm1_hist" style="zoom: 67%;" />
+<p><img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/C28_tm1.png" alt=""></p>
+<hr>
+<p>然后，第二步，利用了上述说的核心思路，对初步得到的SDR图像进行增强。为了在线性量化和直方图均衡化量化二者之间取到一个平衡点，文中设定了一个需要优化的目标函数（或称损失函数）：<br>
+$$<br>
+E=\sum_{k=1}^{N-1}(le_k-\frac{k(D_{max}-D_{min})^{2}}{N})^{2}+\lambda\sum_{k=1}^{N-1}(\int_{0}^{le_k}h(x)dx-\frac{k}{N}\int_{D_{min}}^{D_{max}}h(x)dx)^{2},<br>
+$$</p>
+<p>其中，$\lambda&gt;0$是一个调整权重的参数。当$\lambda=\infty$，优化$E$会得到直方图均衡化量化的结果；当$\lambda=0$，优化$E$会得到线性量化的结果。此外，$N$是区间的数目，$h(x)$是指增强前的图像的直方图。优化$E$，即使最后$E$的值达到最小，应该有：</p>
+<p>$$<br>
+\frac{\partial E}{\partial le_k}=0, k=1,2,…,N-1,<br>
+$$<br>
+实际上，上式带有很强的限制，想通过上式达到优化$E$的效果是很难的。文中提供了一种巧妙的解法，并不直接求解各个区间范围的取值$le_k$，而是先求解各个区间中像素的数目$S_{le}(k)$，求得$S_{le}(k)$后$le_k$也能轻松获得。于是，$E$的形式可以写成：<br>
+$$<br>
+E=\sum^N_{k=1}(S_{le}(k)-S_l(k))^2+\lambda\sum^N_{k=1}(S_{le}(k)-\frac{T}{N})^2<br>
+$$<br>
+其中，$S_l(k)$是线性量化操作各个区间的像素的数目，是已知的；$N$同样是区间的数目，是给定的；$\lambda$也是给定的；$T$是总的像素的数目，同样是已知的。根据上式，可以得到：<br>
+$$<br>
+\frac{\partial E}{\partial S_{le}(k)}=(S_{le}(k)-S_l(k))+\lambda(S_{le}(k)-\frac{T}{N})=0<br>
+$$<br>
+可以解得：<br>
+$$<br>
+S_{le}(k)=\frac{NS_l(k)+\lambda T}{N(1+\lambda)}=\frac{S_l(k)+\lambda T/N}{1+\lambda}, k=1,2,…,N<br>
+$$<br>
+根据这个解，不难发现：<br>
+$$<br>
+\lambda\rightarrow0:S_{le}(k)\rightarrow\frac{NS_l(k)}{N}=S_l(k)\rightarrow linear\ mapping<br>
+$$</p>
+<p>$$<br>
+\lambda\rightarrow\infty:S_{le}(k)\rightarrow\frac{\lambda T}{N\lambda}=\frac{T}{N}\rightarrow histogram\ equalization\ mapping<br>
+$$</p>
 <p>这个结论，和上面说的是一致的。</p>
 <p>下面是在MATLAB上实现的代码。</p>
-<p>首先，线性量化中各个区间的像素的数目<span class="math inline">\(S_l(k)\)</span>，可以直接使用MATLAB中的<code>imhist()</code>函数来求得。<code>a</code>是各个区间的像素的数目，<code>b</code>是各个区间的位置。取<span class="math inline">\(N=256\)</span>。</p>
+<p>首先，线性量化中各个区间的像素的数目$S_l(k)$，可以直接使用MATLAB中的<code>imhist()</code>函数来求得。<code>a</code>是各个区间的像素的数目，<code>b</code>是各个区间的位置。取$N=256$。</p>
 <figure class="highlight matlab"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[a,b] = imhist(sdr_tm1);</span><br></pre></td></tr></table></figure>
-<p>然后，求<span class="math inline">\(T/N\)</span>，即代码中的<code>c</code>。</p>
+<p>然后，求$T/N$，即代码中的<code>c</code>。</p>
 <figure class="highlight matlab"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[h,w] = <span class="built_in">size</span>(sdr_tm1);</span><br><span class="line">c = h*w/<span class="built_in">length</span>(a);</span><br></pre></td></tr></table></figure>
-<p>取<span class="math inline">\(\lambda=0.5\)</span>，可以求得<span class="math inline">\(S_{le}(k)\)</span>，即代码中的<code>x</code>。</p>
+<p>取$\lambda=0.5$，可以求得$S_{le}(k)$，即代码中的<code>x</code>。</p>
 <figure class="highlight matlab"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">lambda = <span class="number">0.5</span>;</span><br><span class="line">x = (a+lambda*c)/(<span class="number">1</span>+lambda);</span><br></pre></td></tr></table></figure>
 <p>至此，将全局映射视为一个量化问题的解已经得到了。接下来，是如何根据这个解来进行量化的操作。下面的做法是我个人能想到的在工程上计算复杂度最小的做法。</p>
-<ol type="1">
+<ol>
 <li>对整张图像的像素值进行排序。</li>
 <li>k=1。</li>
 <li>将整张图像置为k-1（因为标准图像是8bit的，动态范围是0~255）。</li>
-<li>找到第<span class="math inline">\(S_{le}(k)\)</span>个像素值的大小f。</li>
+<li>找到第$S_{le}(k)$个像素值的大小f。</li>
 <li>k=k+1。</li>
 <li>对图像中像素值大于等于f的像素置为k。</li>
 <li>重复4~6步。</li>
 </ol>
-<p>具体代码如下。由于<code>b</code>恰好是<span class="math inline">\([0,1]\)</span>中等间距的256个值，所以在代码中我使用了<code>b</code>。同时，也把直方图和结果图像展现出来，观察对比一下。</p>
+<p>具体代码如下。由于<code>b</code>恰好是$[0,1]$中等间距的256个值，所以在代码中我使用了<code>b</code>。同时，也把直方图和结果图像展现出来，观察对比一下。</p>
 <figure class="highlight matlab"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">sdr_sort = <span class="built_in">sort</span>(sdr_tm1(:));</span><br><span class="line">sdr_tm2 = sdr_tm1;</span><br><span class="line">num = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">for</span> <span class="built_in">i</span>=<span class="number">1</span>:<span class="built_in">length</span>(x)<span class="number">-1</span></span><br><span class="line">    sdr_tm2(sdr_tm1&gt;=sdr_sort(num))=b(<span class="built_in">i</span>);</span><br><span class="line">    num = <span class="built_in">round</span>(num+x(<span class="built_in">i</span>));</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line">sdr_tm2(sdr_tm1&gt;=sdr_sort(num))=b(<span class="keyword">end</span>);</span><br><span class="line"><span class="built_in">figure</span>(<span class="number">3</span>);</span><br><span class="line">imhist(sdr_tm2);</span><br><span class="line"><span class="built_in">figure</span>(<span class="number">4</span>);</span><br><span class="line">imshow(uint8(<span class="built_in">round</span>(sdr_tm2*<span class="number">255</span>)));</span><br></pre></td></tr></table></figure>
 <p>结果如下。</p>
-<p><img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/C28_tm2_hist.png" alt="C28_tm2_hist" style="zoom: 67%;" /></p>
-<figure>
-<img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/C28_tm2.png" alt="" /><figcaption>C28_tm2</figcaption>
-</figure>
+<img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/C28_tm2_hist.png" alt="C28_tm2_hist" style="zoom: 67%;" />
+<p><img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/C28_tm2.png" alt="C28_tm2"></p>
 <p>从直方图可以看到，在保持直方图形状的同时，又更加充分地利用了动态范围。而从结果图像看，对比度得到了增强，同时整体的观感仍然保持着非常自然，光线的变化过渡是非常自然的。为了更好地对比，下面把两个结果并排一下（左侧的是初步映射的SDR图像，右侧是增强后的SDR图像，可点击放大左右切换对比）。</p>
 <p><img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/C28_tm1_hist.png" alt="C28_tm1_hist" style="zoom: 48%;" /><img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/C28_tm2_hist.png" alt="C28_tm2_hist" style="zoom: 48%;" /></p>
 <p><img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/C28_tm1.png" alt="C28_tm2" style="zoom: 18%;" /><img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/C28_tm2.png" alt="C28_tm2" style="zoom: 18%;" /></p>
