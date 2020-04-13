@@ -382,4 +382,45 @@ S_{le}(k)=\frac{NS_l(k)+\lambda T}{N(1+\lambda)}=\frac{S_l(k)+\lambda T/N}{1+\la
         <tag>解密</tag>
       </tags>
   </entry>
+  <entry>
+    <title>学习：《Image Super-Resolution Using Very Deep Residual Channel Attention Networks》</title>
+    <url>/2020/04/10/%E5%AD%A6%E4%B9%A0%EF%BC%9A%E3%80%8AImage%20Super-Resolution%20Using%20Very%20Deep%20Residual%20Channel%20Attention%20Networks%E3%80%8B/</url>
+    <content><![CDATA[<blockquote>
+<p>今天看了一篇超分（Super Resolution, SR）的文章，发表在2018年的CVPR，名字是《Image Super-Resolution Using Very Deep Residual Channel Attention Networks》。虽然这篇文章研究的领域是超分，但创新的重点在于神经网络的结构上。我不知道文章介绍的是否在其他领域有应用，然后被作者应用在超分上，其介绍的内容本身是有价值的。恰巧内容不算复杂，理解得比较透彻，记录一下。</p>
+</blockquote>
+<a id="more"></a>
+<p>文章总结了两个超分领域存在的问题。</p>
+<p>第一，基于深度学习的超分网络，其性能的提升主要依赖于神经网络层数的增加，也就是依赖于神经网络的“深度”。但是，随着网络层数的增加，网络也变得不容易训练以及不容易发挥深度神经网络的性能，浅层网络提取的特征并不能被后面的深层网络充分利用。</p>
+<p>第二，在超分领域，希望深度神经网络去学习高频信息，因为低频信息可以在输入的低分辨率图像中直接获取。但是，神经网络的卷积操作，对所有通道的信息都一视同仁，而这些信息中图像的低频信息占据大部分。因此，网络无法很好地学习或提取高频信息，限制了深度神经网络的性能。</p>
+<p>针对这些问题，文章提出了Residual Channel Attention Network（RCAN）。为了解决第一个问题，文章提出了采用RIR（Residual in Residual）结构；为了解决第二个问题，文章提出了通道注意力机制（Channel Attention Mechanism）。</p>
+<p>为了方便理解，首先看一下RCAN的整体结构。</p>
+<p><img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/image-20200410213437779.png" style="zoom:80%;" /></p>
+<p>输入的低分辨率图像首先经过一个浅层网络，简单地提取一下特征。然后就是经过RIR结构，这一结构是克服网络过深不易训练的关键。接着，经过一个上采样的模块。最后，是一个重构图像的浅层网络。</p>
+<p>可以看到，RIR结构是主要是由多个RG（Residual Group）堆叠而成，后接一个简单的卷积层整合一下特征。此外还有一个几乎跨越整个网络的长跳连，这是因为靠简单堆叠的RG并不能实现更好的性能。从图中看到，用<span class="math inline">\(F_{DF}\)</span>表示RIR结构输出的特征，同时文中用<span class="math inline">\(F_0\)</span>表示前面由浅层网络提取得到的特征，也就是RIR结构的输入特征。整个RIR结构的计算可以用下面公式进行表示： <span class="math display">\[
+F_{DF}=F_0+W_{LSC}H_g(H_{g-1}(\cdots H_1(F_0)\cdots)).
+\]</span> 其中，<span class="math inline">\(H_g\)</span>表示第<span class="math inline">\(g\)</span>个RG，<span class="math inline">\(W_{LSC}\)</span>指的是RIR结构最后整合特征的卷积层。</p>
+<p>同时，我们可以从图中看到RG的内部结构，与RIR结构本质上没什么两样。RG主要由多个RCAB（Residual Channel Attention Block）堆叠而成，后接一个简单的卷积整合特征。此外还有一个连接RCAB首尾的短跳连。可以想象，RIR结构中将含有多个这样的短跳连，文中的说法是可以使低频信息得到分流，使网络更多专注在高频信息的学习上。同理，RCAB的计算也是可以用公式来描述： <span class="math display">\[
+F_g=F_{g-1}+W_gH_{g,B}(H_{g,B-1}(\cdots H_{g,1}(F_{g-1})\cdots)).
+\]</span> 其中，<span class="math inline">\(F_{g-1}\)</span>是第<span class="math inline">\(g-1\)</span>个RG的输出，也即是第<span class="math inline">\(g\)</span>个RG的输入，同理<span class="math inline">\(F_g\)</span>是第<span class="math inline">\(g\)</span>个RCAB的输出。<span class="math inline">\(H_{g,B}\)</span>指的是第<span class="math inline">\(g\)</span>个RG里的第<span class="math inline">\(B\)</span>个RCAB，<span class="math inline">\(W_g\)</span>指的是第<span class="math inline">\(g\)</span>个RG中最后整合特征的卷积层。</p>
+<p>至此，我们可以看到，所谓RIR，确实如其名，就是残差网络中有着残差网络。而另一个重要的点是通道注意力机制。通过该机制，网络不会平等地处理卷积中的不同通道，而是会有所侧重，对不同通道的信息敏感度会有所增加，因此网络能够更加专注地学习或提取通道中的高频信息。</p>
+<p>通道注意力机制就体现在RCAB中，首先看一下RCAB的结构。</p>
+<p><img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/image-20200413163051618.png" style="zoom:80%;" /></p>
+<p>可以看到，RCAB就是在普通的Residual Block的基础上添加了一个Channel Attention的机制，即上图虚线框的部分。对于这部分的详情，我们可以看下图。</p>
+<p><img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/image-20200413164550342.png" style="zoom:80%;" /></p>
+<p>输入是一个大小为<span class="math inline">\(H\times W\times C\)</span>的特征矩阵，<span class="math inline">\(H\)</span>是高，<span class="math inline">\(W\)</span>是宽，<span class="math inline">\(C\)</span>是通道。首先经过一个全局平均池化<span class="math inline">\(H_{GP}\)</span>，得到大小为<span class="math inline">\(1\times 1\times C\)</span>的特征<span class="math inline">\(z\)</span>。接下来是经过两个卷积层和激活层，可用公式表示为： <span class="math display">\[
+s=f(W_U\delta(W_Dz)).
+\]</span> <span class="math inline">\(s\)</span>表示大小为<span class="math inline">\(1\times 1\times C\)</span>的输出，<span class="math inline">\(f\)</span>和<span class="math inline">\(\delta\)</span>分别表示sigmoid激活函数和ReLU激活函数，<span class="math inline">\(W_U\)</span>和<span class="math inline">\(W_D\)</span>则表示两个卷积操作。事实上，<span class="math inline">\(W_D\)</span>对特征进行了通道上的下采样，<span class="math inline">\(W_U\)</span>对特征进行了通道上的上采样，变化因子是<span class="math inline">\(\gamma\)</span>，二者结合就是对特征进行了先下采样后上采样，同时保持前后通道数一致。文中对这一操作没有详细的解释，个人认为是为了提升泛化能力，使这种对通道有着不同敏感度的注意力机制能够适用于更多的图像。由于sigmoid函数已经将<span class="math inline">\(s\)</span>的值限制在0与1之间，所以最后将通道数一致的<span class="math inline">\(s\)</span>和<span class="math inline">\(z\)</span>按通道数进行相乘，<span class="math inline">\(s\)</span>实际作为各个通道的权重，自然使得各通道不再被平等地对待，而是分出了轻重缓急。</p>
+<p>到这里，文章的主要内容基本介绍完毕。虽然在这里，是借用超分这个任务以及其中高频低频信息的理论来对这个网络进行介绍，但个人认为这种网络的结构可用于其他任务，用以解决过深网络不易训练的问题。在一般计算机视觉的任务中，输入实际上都会包含输出的大部分信息，我们希望网络能更好地学习输入与输出间的残差信息，事实上就是另一种意义的“高频信息”。因此，网络构建上的想法应该是想通的。很有可能文中的做法也不是首次出现，在其他领域早有应用。</p>
+<p>有缘再见！</p>
+]]></content>
+      <categories>
+        <category>超分</category>
+      </categories>
+      <tags>
+        <tag>学习</tag>
+        <tag>超分</tag>
+        <tag>RCAN</tag>
+        <tag>残差网络</tag>
+      </tags>
+  </entry>
 </search>

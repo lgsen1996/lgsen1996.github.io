@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"lgsen1996.github.io","root":"/","scheme":"Pisces","version":"7.7.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":-1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="今天看了一篇超分（Super Resolution, SR）的文章，发表在2018年的CVPR，名字是《Image Super-Resolution Using Very Deep Residual Channel Attention Networks》。虽然这篇文章研究的领域是超分，但创新的重点在于神经网络的结构上。我不知道文章介绍的是否在其他领域有应用，然后被作者应用在超分上，其介绍的内容">
+<meta property="og:type" content="article">
+<meta property="og:title" content="学习：《Image Super-Resolution Using Very Deep Residual Channel Attention Networks》">
+<meta property="og:url" content="https://lgsen1996.github.io/2020/04/10/%E5%AD%A6%E4%B9%A0%EF%BC%9A%E3%80%8AImage%20Super-Resolution%20Using%20Very%20Deep%20Residual%20Channel%20Attention%20Networks%E3%80%8B/index.html">
+<meta property="og:site_name" content="lgsen的异度空间">
+<meta property="og:description" content="今天看了一篇超分（Super Resolution, SR）的文章，发表在2018年的CVPR，名字是《Image Super-Resolution Using Very Deep Residual Channel Attention Networks》。虽然这篇文章研究的领域是超分，但创新的重点在于神经网络的结构上。我不知道文章介绍的是否在其他领域有应用，然后被作者应用在超分上，其介绍的内容">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://raw.githubusercontent.com/lgsen1996/PicData/master/image-20200410213437779.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/lgsen1996/PicData/master/image-20200413163051618.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/lgsen1996/PicData/master/image-20200413164550342.png">
+<meta property="article:published_time" content="2020-04-10T13:12:00.000Z">
+<meta property="article:modified_time" content="2020-04-10T13:12:00.000Z">
+<meta property="article:author" content="lgsen">
+<meta property="article:tag" content="学习">
+<meta property="article:tag" content="超分">
+<meta property="article:tag" content="RCAN">
+<meta property="article:tag" content="残差网络">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/lgsen1996/PicData/master/image-20200410213437779.png">
+
+<link rel="canonical" href="https://lgsen1996.github.io/2020/04/10/%E5%AD%A6%E4%B9%A0%EF%BC%9A%E3%80%8AImage%20Super-Resolution%20Using%20Very%20Deep%20Residual%20Channel%20Attention%20Networks%E3%80%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>学习：《Image Super-Resolution Using Very Deep Residual Channel Attention Networks》 | lgsen的异度空间</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">lgsen的异度空间</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">欢迎 | Welcome</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>About</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://lgsen1996.github.io/2020/04/10/%E5%AD%A6%E4%B9%A0%EF%BC%9A%E3%80%8AImage%20Super-Resolution%20Using%20Very%20Deep%20Residual%20Channel%20Attention%20Networks%E3%80%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="lgsen">
+      <meta itemprop="description" content="越努力的人越幸运<br>越自律的人越自由">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="lgsen的异度空间">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          学习：《Image Super-Resolution Using Very Deep Residual Channel Attention Networks》
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-04-10 21:12:00" itemprop="dateCreated datePublished" datetime="2020-04-10T21:12:00+08:00">2020-04-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%B6%85%E5%88%86/" itemprop="url" rel="index"><span itemprop="name">超分</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>今天看了一篇超分（Super Resolution, SR）的文章，发表在2018年的CVPR，名字是《Image Super-Resolution Using Very Deep Residual Channel Attention Networks》。虽然这篇文章研究的领域是超分，但创新的重点在于神经网络的结构上。我不知道文章介绍的是否在其他领域有应用，然后被作者应用在超分上，其介绍的内容本身是有价值的。恰巧内容不算复杂，理解得比较透彻，记录一下。</p>
+</blockquote>
+<a id="more"></a>
+<p>文章总结了两个超分领域存在的问题。</p>
+<p>第一，基于深度学习的超分网络，其性能的提升主要依赖于神经网络层数的增加，也就是依赖于神经网络的“深度”。但是，随着网络层数的增加，网络也变得不容易训练以及不容易发挥深度神经网络的性能，浅层网络提取的特征并不能被后面的深层网络充分利用。</p>
+<p>第二，在超分领域，希望深度神经网络去学习高频信息，因为低频信息可以在输入的低分辨率图像中直接获取。但是，神经网络的卷积操作，对所有通道的信息都一视同仁，而这些信息中图像的低频信息占据大部分。因此，网络无法很好地学习或提取高频信息，限制了深度神经网络的性能。</p>
+<p>针对这些问题，文章提出了Residual Channel Attention Network（RCAN）。为了解决第一个问题，文章提出了采用RIR（Residual in Residual）结构；为了解决第二个问题，文章提出了通道注意力机制（Channel Attention Mechanism）。</p>
+<p>为了方便理解，首先看一下RCAN的整体结构。</p>
+<p><img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/image-20200410213437779.png" style="zoom:80%;" /></p>
+<p>输入的低分辨率图像首先经过一个浅层网络，简单地提取一下特征。然后就是经过RIR结构，这一结构是克服网络过深不易训练的关键。接着，经过一个上采样的模块。最后，是一个重构图像的浅层网络。</p>
+<p>可以看到，RIR结构是主要是由多个RG（Residual Group）堆叠而成，后接一个简单的卷积层整合一下特征。此外还有一个几乎跨越整个网络的长跳连，这是因为靠简单堆叠的RG并不能实现更好的性能。从图中看到，用<span class="math inline">\(F_{DF}\)</span>表示RIR结构输出的特征，同时文中用<span class="math inline">\(F_0\)</span>表示前面由浅层网络提取得到的特征，也就是RIR结构的输入特征。整个RIR结构的计算可以用下面公式进行表示： <span class="math display">\[
+F_{DF}=F_0+W_{LSC}H_g(H_{g-1}(\cdots H_1(F_0)\cdots)).
+\]</span> 其中，<span class="math inline">\(H_g\)</span>表示第<span class="math inline">\(g\)</span>个RG，<span class="math inline">\(W_{LSC}\)</span>指的是RIR结构最后整合特征的卷积层。</p>
+<p>同时，我们可以从图中看到RG的内部结构，与RIR结构本质上没什么两样。RG主要由多个RCAB（Residual Channel Attention Block）堆叠而成，后接一个简单的卷积整合特征。此外还有一个连接RCAB首尾的短跳连。可以想象，RIR结构中将含有多个这样的短跳连，文中的说法是可以使低频信息得到分流，使网络更多专注在高频信息的学习上。同理，RCAB的计算也是可以用公式来描述： <span class="math display">\[
+F_g=F_{g-1}+W_gH_{g,B}(H_{g,B-1}(\cdots H_{g,1}(F_{g-1})\cdots)).
+\]</span> 其中，<span class="math inline">\(F_{g-1}\)</span>是第<span class="math inline">\(g-1\)</span>个RG的输出，也即是第<span class="math inline">\(g\)</span>个RG的输入，同理<span class="math inline">\(F_g\)</span>是第<span class="math inline">\(g\)</span>个RCAB的输出。<span class="math inline">\(H_{g,B}\)</span>指的是第<span class="math inline">\(g\)</span>个RG里的第<span class="math inline">\(B\)</span>个RCAB，<span class="math inline">\(W_g\)</span>指的是第<span class="math inline">\(g\)</span>个RG中最后整合特征的卷积层。</p>
+<p>至此，我们可以看到，所谓RIR，确实如其名，就是残差网络中有着残差网络。而另一个重要的点是通道注意力机制。通过该机制，网络不会平等地处理卷积中的不同通道，而是会有所侧重，对不同通道的信息敏感度会有所增加，因此网络能够更加专注地学习或提取通道中的高频信息。</p>
+<p>通道注意力机制就体现在RCAB中，首先看一下RCAB的结构。</p>
+<p><img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/image-20200413163051618.png" style="zoom:80%;" /></p>
+<p>可以看到，RCAB就是在普通的Residual Block的基础上添加了一个Channel Attention的机制，即上图虚线框的部分。对于这部分的详情，我们可以看下图。</p>
+<p><img src="https://raw.githubusercontent.com/lgsen1996/PicData/master/image-20200413164550342.png" style="zoom:80%;" /></p>
+<p>输入是一个大小为<span class="math inline">\(H\times W\times C\)</span>的特征矩阵，<span class="math inline">\(H\)</span>是高，<span class="math inline">\(W\)</span>是宽，<span class="math inline">\(C\)</span>是通道。首先经过一个全局平均池化<span class="math inline">\(H_{GP}\)</span>，得到大小为<span class="math inline">\(1\times 1\times C\)</span>的特征<span class="math inline">\(z\)</span>。接下来是经过两个卷积层和激活层，可用公式表示为： <span class="math display">\[
+s=f(W_U\delta(W_Dz)).
+\]</span> <span class="math inline">\(s\)</span>表示大小为<span class="math inline">\(1\times 1\times C\)</span>的输出，<span class="math inline">\(f\)</span>和<span class="math inline">\(\delta\)</span>分别表示sigmoid激活函数和ReLU激活函数，<span class="math inline">\(W_U\)</span>和<span class="math inline">\(W_D\)</span>则表示两个卷积操作。事实上，<span class="math inline">\(W_D\)</span>对特征进行了通道上的下采样，<span class="math inline">\(W_U\)</span>对特征进行了通道上的上采样，变化因子是<span class="math inline">\(\gamma\)</span>，二者结合就是对特征进行了先下采样后上采样，同时保持前后通道数一致。文中对这一操作没有详细的解释，个人认为是为了提升泛化能力，使这种对通道有着不同敏感度的注意力机制能够适用于更多的图像。由于sigmoid函数已经将<span class="math inline">\(s\)</span>的值限制在0与1之间，所以最后将通道数一致的<span class="math inline">\(s\)</span>和<span class="math inline">\(z\)</span>按通道数进行相乘，<span class="math inline">\(s\)</span>实际作为各个通道的权重，自然使得各通道不再被平等地对待，而是分出了轻重缓急。</p>
+<p>到这里，文章的主要内容基本介绍完毕。虽然在这里，是借用超分这个任务以及其中高频低频信息的理论来对这个网络进行介绍，但个人认为这种网络的结构可用于其他任务，用以解决过深网络不易训练的问题。在一般计算机视觉的任务中，输入实际上都会包含输出的大部分信息，我们希望网络能更好地学习输入与输出间的残差信息，事实上就是另一种意义的“高频信息”。因此，网络构建上的想法应该是想通的。很有可能文中的做法也不是首次出现，在其他领域早有应用。</p>
+<p>有缘再见！</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%AD%A6%E4%B9%A0/" rel="tag"># 学习</a>
+              <a href="/tags/%E8%B6%85%E5%88%86/" rel="tag"># 超分</a>
+              <a href="/tags/RCAN/" rel="tag"># RCAN</a>
+              <a href="/tags/%E6%AE%8B%E5%B7%AE%E7%BD%91%E7%BB%9C/" rel="tag"># 残差网络</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/03/31/%E5%AD%A6%E4%B9%A0%EF%BC%9A%E3%80%8ATone%20Mapping%20for%20HDR%20Image%20using%20Optimization%20-%20A%20New%20Closed%20Form%20Solution%E3%80%8B/" rel="prev" title="学习：《Tone Mapping for HDR Image using Optimization - A New Closed Form Solution》">
+      <i class="fa fa-chevron-left"></i> 学习：《Tone Mapping for HDR Image using Optimization - A New Closed Form Solution》
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="lgsen"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">lgsen</p>
+  <div class="site-description" itemprop="description">越努力的人越幸运<br>越自律的人越自由</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">10</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="mailto:lgs961129@gmail.com" title="E-Mail → mailto:lgs961129@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">lgsen</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
